@@ -110,14 +110,17 @@ export async function deleteLogAction(month: string): Promise<void> {
   refreshAll();
 }
 
+/** An empty form field means "keep the plan's value". Checked before coercion, which would turn "" into 0. */
+const optNum = (n: z.ZodType<number>) => z.union([z.literal("").transform(() => undefined), n]).optional();
+
 const ScenarioForm = z.object({
   name: z.string().min(1).max(80),
   month: z.union([Month, z.literal("")]).default(""),
   inHand: z.coerce.number().min(0).default(0),
-  raisePct: z.union([z.coerce.number(), z.literal("")]).default(""),
-  housePrice: z.union([z.coerce.number(), z.literal("")]).default(""),
+  raisePct: optNum(z.coerce.number().min(-100).max(100)),
+  housePrice: optNum(z.coerce.number().min(0)),
   houseDate: z.union([Month, z.literal("")]).default(""),
-  houseShare: z.union([z.coerce.number().min(0).max(100), z.literal("")]).default(""),
+  houseShare: optNum(z.coerce.number().min(0).max(100)),
 });
 
 export async function createScenarioAction(_: ActionResult | null, form: FormData): Promise<ActionResult> {
@@ -131,13 +134,13 @@ export async function createScenarioAction(_: ActionResult | null, form: FormDat
   if (s.month && s.inHand > 0) {
     plan.income.events = [...(plan.income.events ?? []).filter((e) => e.month !== s.month), { id: crypto.randomUUID(), month: s.month, inHand: s.inHand, note: s.name }];
   }
-  if (s.raisePct !== "") plan.income.raisePct = s.raisePct;
+  if (s.raisePct !== undefined) plan.income.raisePct = s.raisePct;
   const goals = plan.goals ?? [];
   const house = goals.find((g) => g.kind === "house");
   if (house) {
-    if (s.housePrice !== "" && house.house) house.house.priceToday = s.housePrice;
+    if (s.housePrice !== undefined && house.house) house.house.priceToday = s.housePrice;
     if (s.houseDate) house.targetDate = s.houseDate;
-    if (s.houseShare !== "") {
+    if (s.houseShare !== undefined) {
       const others = goals.filter((g) => g !== house);
       const otherTotal = others.reduce((t, g) => t + Number(g.share ?? 0), 0);
       house.share = s.houseShare;

@@ -1,110 +1,67 @@
 # Money Planner
 
-A personal finance app that tells you where each rupee goes this month, tracks every goal, and recalculates the whole plan when your salary, expenses or goals change.
+A private personal-finance planner for salaried people in India. It turns your salary, expenses and goals into an exact monthly plan (how much goes into each fund this month), tracks every goal, and recalculates the whole plan when your salary, an EMI or a goal changes.
 
-Built with Next.js (App Router), TypeScript, PostgreSQL + Drizzle, Auth.js (Google sign-in), Zod, Tailwind CSS and Recharts.
+Every number on every page comes from one tested calculation engine. Change one input and the whole plan recalculates month by month.
 
-## What it does
+> Projections are estimates based on your own assumptions. They're not financial advice.
 
-| Page | What you see |
+## Features
+
+| Page | What it does |
 | --- | --- |
-| **This month** | Income, commitments and free money; the exact amount for each fund; upcoming changes; goal cards; growth chart; a form to record a salary change |
-| **Year by year** | Month-by-month plan sampled each December, to the plan's end |
-| **Track** | Log real balances once a month; history compared with the original plan |
-| **What if** | Copy the plan with a different salary, raise, house price or date, and compare side by side |
-| **Edit plan** | Income, salary changes, expenses (with end dates and step changes), fixed investments, one-time payments, goals and fund splits, assumptions |
+| **This month** | In-hand, committed and free money; the exact amount for each fund; what's coming up; goal cards with the house verdict; an interactive growth chart; record a salary change |
+| **Year by year** | The plan sampled each December, expandable to every month, downloadable as CSV |
+| **Track** | Log real balances for any month; history against a frozen baseline (green ahead, red behind); projections restart from your real numbers |
+| **What if** | A live sandbox with sliders for salary, raise, house price, date and share; save scenarios, compare side by side, apply one to your plan |
+| **Edit plan** | Income, salary changes, expenses with step changes, fixed investments, one-time payments, goals, assumptions, with a live impact panel as you type |
+| **Plan history** | Every saved version; restore any of them; choose the tracking baseline |
+| **Settings** | Timezone, theme, export all your data, delete your account |
 
-## How the numbers work
+## Quick start (no setup needed)
 
-All money logic lives in `lib/engine/`. It's pure TypeScript with no I/O, and it's covered by tests.
-
-Each month, the engine works out the free money:
-
+```bash
+cp .env.example .env.local
+npm install
+npm run dev
 ```
-free = in-hand − expenses − fixed investments − spending buffer
-```
 
-1. One-time payments (like a loan foreclosure) come out of the emergency fund first.
-2. Free money fills the emergency fund up to its target.
-3. After that, free money splits across active goals by their share.
-4. A goal moves into debt funds `debtYears` before its target date, and stops receiving money after it.
+Open <http://localhost:3000>, choose **Continue as dev user**, then **Load the example plan**.
 
-How salary, expenses and investments change over time:
+Locally the app uses **embedded Postgres** ([PGlite](https://pglite.dev), stored in `.data/`) and a **dev-only sign-in**, so you don't need a database or a Google app ([ADR-0011](docs/04-architecture/decisions/0011-zero-setup-local-dev.md)). The dev sign-in never works in production builds.
 
-- **Salary** rises by the yearly raise % every raise month. A recorded salary change resets the base from that month.
-- **Expenses** marked "grows with inflation" rise every raise month. A change (e.g. family support to ₹10,000 from April 2027) sets a new base.
-- **Fixed investments** step up every raise month, up to their cap.
-
-Tracking: a monthly log holds your balances at the **start** of that month, before its SIPs. The latest log becomes the starting point for every projection.
-
-## Setup
-
-1. **Install:** `npm install`. The repo's `.npmrc` sets `legacy-peer-deps`, because Auth.js v5 is still a beta.
-2. **Create a Postgres database.** [Neon](https://neon.tech) and [Supabase](https://supabase.com) both have free tiers.
-3. **Create a Google OAuth client** at <https://console.cloud.google.com/apis/credentials>, with this redirect URI:
-   `http://localhost:3000/api/auth/callback/google`
-4. **Configure:** `cp .env.example .env.local` and fill in:
-   - `DATABASE_URL`
-   - `AUTH_SECRET` (`openssl rand -base64 32`)
-   - `AUTH_GOOGLE_ID` and `AUTH_GOOGLE_SECRET`
-   - `ALLOWED_EMAILS`, set to your email so nobody else can sign in
-5. **Create the tables:** `npm run db:migrate`
-6. **Run:** `npm run dev`, then open <http://localhost:3000> and sign in once.
-7. **Load the sample plan (optional):** `npm run db:seed -- you@gmail.com`
-
-## Scripts
+## Commands
 
 | Command | What it does |
 | --- | --- |
 | `npm run dev` | Start the dev server |
-| `npm run build` | Production build |
-| `npm test` | Engine tests (Vitest) |
+| `npm test` | Engine, property, database and security tests (Vitest) |
+| `npm run e2e` | End-to-end tests in a browser (Playwright) |
 | `npm run typecheck` | TypeScript check |
-| `npm run db:generate` | Create a migration after changing `lib/db/schema.ts` |
-| `npm run db:migrate` | Apply migrations |
-| `npm run db:studio` | Browse the database |
-| `npm run db:seed -- email` | Load the sample plan for a user |
+| `npm run lint` | ESLint, including the layer import rules |
+| `npm run build` | Production build |
+| `npm run db:generate` | Create a SQL migration after changing `lib/db/schema.ts` |
+| `npm run db:migrate` | Apply migrations to `DATABASE_URL` |
 
-## Project layout
+## Deploying to production
 
-```
-app/
-  login/                 Google sign-in
-  (app)/dashboard/       This month
-  (app)/timeline/        Year by year
-  (app)/track/           Monthly balance logs
-  (app)/scenarios/       What-if comparisons
-  (app)/plan/            Plan editor
-  api/auth/              Auth.js route
-lib/
-  engine/                Pure money engine + tests (schema, months, project, house, events, summary, format)
-  db/                    Drizzle schema, lazy client, user-scoped queries
-  actions.ts             Server Actions (every one checks the session)
-  load.ts                Loads a plan + logs and runs the forecast
-components/              UI: plan editor, forms, chart, cards
-drizzle/                 SQL migrations
-scripts/seed.ts          Loads the sample plan
-```
+1. Create a Postgres database (Neon or Supabase, in or near Mumbai) and turn on point-in-time restore.
+2. Create a Google OAuth client with the redirect URI `https://<your-domain>/api/auth/callback/google`.
+3. Import the repo in Vercel and set these environment variables: `DATABASE_URL`, `AUTH_SECRET` (`openssl rand -base64 32`), `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET` and `ALLOWED_EMAILS` (your Gmail). In production an empty `ALLOWED_EMAILS` blocks every sign-in.
+4. Run `DATABASE_URL=<production url> npm run db:migrate` once, then deploy.
+5. Sign in and enter your real plan in **Edit plan**. Never put real figures in the repository.
 
-## Security
+The full runbook is in [environments and deployment](docs/07-operations/environments-and-deployment.md).
 
-- Every query filters on the signed-in user's id. Server Actions call `requireUserId()` before doing anything.
-- `ALLOWED_EMAILS` restricts sign-in to your own accounts.
-- No bank credentials are stored.
-- Turn on daily backups in your database provider.
+## How it's built
 
-## Deploying
+Next.js 16 (App Router, Server Actions), React 19, TypeScript, Zod 4, Drizzle with PostgreSQL (PGlite locally), Auth.js v5 (Google, database sessions), Tailwind CSS 4, Recharts, Vitest, fast-check and Playwright.
 
-1. Push to GitHub and import the repo in Vercel.
-2. Add the same environment variables in the Vercel project settings.
-3. Add the production callback URL to your Google OAuth client:
-   `https://<your-domain>/api/auth/callback/google`
-4. Run `npm run db:migrate` against the production database once.
+- `lib/engine/`: the pure money engine (no I/O). It runs on the server for saved data and in the browser for live previews.
+- `lib/db/`: Drizzle schema and queries. Every query is scoped to the signed-in user.
+- `lib/actions.ts`: Server Actions. Each one authenticates, validates, writes, then revalidates.
+- `app/`, `components/`: pages and UI.
 
-## Next steps
+## Documentation
 
-- Email reminders on salary day and every April (Vercel Cron + Resend).
-- Value funds automatically from AMFI's daily NAV file, with units imported from your CAMS/KFintech statement.
-- A Claude-powered assistant that calls the engine as tools, and an MCP server over your plan.
-
-The projections are estimates based on your assumptions. They are not financial advice.
+The design is in [`docs/`](docs/README.md): vision, requirements with status, the [engine specification](docs/03-domain/engine-spec.md) with [worked examples](docs/03-domain/worked-examples.md), architecture and decisions (ADRs), security, UX guidelines, testing, operations and the roadmap. [`CLAUDE.md`](CLAUDE.md) is the guide for AI agents working in this repo, and `.claude/agents/` defines the project's builder, UI and reviewer agents.

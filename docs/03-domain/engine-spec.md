@@ -2,7 +2,7 @@
 
 The money engine turns a [plan](plan-model.md) into a month-by-month projection. Every number in the app comes from it. This document is the source of truth: when the code and this spec disagree, one of them is a bug.
 
-It describes **engine v2**, the Phase 1.1 target. Where v1 (today's code) behaves differently, a **v1:** note says how.
+It describes **engine v2**, implemented on 13 Oct 2026 (`lib/engine`). The **v1:** notes record how the original engine differed, for anyone comparing old projections.
 
 ## 1. Ground rules
 

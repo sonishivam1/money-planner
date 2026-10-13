@@ -4,7 +4,7 @@
 
 | Environment | Runs on | Database | Sign-in | Purpose |
 | --- | --- | --- | --- | --- |
-| **Local** | `npm run dev` | A Neon branch or local Postgres | Google, allow-list = your email | Development |
+| **Local** | `npm run dev` | Embedded Postgres (`pglite:./.data/dev`), or a Neon branch | Dev-only sign-in, or Google | Development |
 | **Preview** | Vercel preview per PR | A Neon branch per preview (or one shared dev branch) | Google (preview callback URL), or test sign-in when `E2E=1` | Review and e2e tests |
 | **Production** | Vercel production (`main`) | Neon main branch | Google, allow-list required | Real use |
 
@@ -22,7 +22,9 @@
 | `CRON_SECRET` | Phase 2 | Protects `/api/cron/*` |
 | `RESEND_API_KEY` | Phase 2 | Email |
 | `ANTHROPIC_API_KEY` | Phase 3 | Assistant |
-| `E2E` | CI and preview only | Enables test sign-in. Never set in production |
+| `AUTH_DEV_LOGIN`, `DEV_LOGIN_EMAIL` | Local and CI only | Shows the dev-only sign-in. Ignored by production builds (ADR-0011) |
+| `MP_FAKE_NOW` | Tests only | Pins the server clock (ISO date). Ignored by production builds |
+| `NEXT_DIST_DIR` | Tests only | A separate build folder, so e2e can run beside a dev server |
 
 Secrets live in Vercel's environment settings and in `.env.local` locally (git-ignored). `.env.example` lists the names with no values.
 

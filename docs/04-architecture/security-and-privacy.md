@@ -22,7 +22,7 @@ What we deliberately **don't** hold: bank or broker credentials, account numbers
 | One user sees another's data | Changing an id in a request | Every query filters by the session's `userId`, including by-id deletes (`AND userId = ?`). No query takes a user id from the client |
 | Calling a Server Action directly | A script posts to the action endpoint | Server Actions are public HTTP endpoints. Each one calls `requireUserId()` first and validates input with Zod (`NFR-SEC-1`, `NFR-SEC-3`). Next.js rejects cross-origin action calls |
 | Cross-site request forgery | A malicious page posts a form | Next.js Server Action origin check; `SameSite=Lax` session cookie |
-| Cross-site scripting | A plan name containing `<script>` | React escapes output; no `dangerouslySetInnerHTML`; a Content Security Policy that blocks inline scripts other than Next.js's own (nonce-based) |
+| Cross-site scripting | A plan name containing `<script>` | React escapes output; no `dangerouslySetInnerHTML`; a Content Security Policy that allows scripts only from this site (see below) |
 | Clickjacking | The app framed by another site | `frame-ancestors 'none'` |
 | Session theft | A stolen cookie | `HttpOnly`, `Secure`, `SameSite=Lax` cookies; database sessions revocable by deleting the row; 30-day expiry |
 | Leaked secrets | A secret committed to the public repo | `.env*` git-ignored; GitHub secret scanning and push protection on; rotate on any suspicion (see [operations](../07-operations/environments-and-deployment.md)) |
@@ -53,11 +53,14 @@ Set in `next.config.ts` for every response:
 
 | Header | Value |
 | --- | --- |
-| `Content-Security-Policy` | `default-src 'self'; script-src 'self' 'nonce-…'; style-src 'self' 'unsafe-inline'; img-src 'self' https://lh3.googleusercontent.com data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self' https://accounts.google.com` |
+| `Content-Security-Policy` | `default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://lh3.googleusercontent.com; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self' https://accounts.google.com; object-src 'none'` |
 | `Strict-Transport-Security` | `max-age=63072000; includeSubDomains` |
 | `X-Content-Type-Options` | `nosniff` |
 | `Referrer-Policy` | `strict-origin-when-cross-origin` |
+| `X-Frame-Options` | `DENY` |
 | `Permissions-Policy` | `camera=(), microphone=(), geolocation=()` |
+
+`script-src` allows `'unsafe-inline'` because Next.js injects inline hydration scripts. A nonce would need per-request middleware and would make every page uncacheable. The app loads no third-party scripts and renders all user text through React's escaping, so this is an accepted trade-off. Revisit it if a third-party script is ever added.
 
 ## Privacy
 

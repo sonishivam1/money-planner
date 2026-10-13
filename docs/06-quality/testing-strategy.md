@@ -12,9 +12,9 @@ The numbers are the product, so most of the testing effort goes into the engine,
 | **Schema and migration** | Old documents load; validation catches bad input | Vitest | `lib/engine/schema.test.ts`, `migrate.test.ts` | Every push |
 | **Data access** | Queries are scoped by user; save conflicts are detected; revisions are written | Vitest + PGlite (in-process Postgres) | `lib/db/*.test.ts` | Every push |
 | **Actions** | Each action authenticates, validates and returns field errors | Vitest with the session mocked | `lib/actions.test.ts` | Every push |
-| **End to end** | Key journeys work in a real browser | Playwright | `e2e/` | Every PR, against a preview build |
+| **End to end** | Key journeys work in a real browser | Playwright | `e2e/` | Every push, in CI |
 
-Today only the engine unit layer exists (14 tests). Building the rest is part of Phase 1.1 (milestone M1 in the [roadmap](../08-delivery/roadmap.md)).
+All layers exist: engine unit, golden and property tests; schema and migration tests; database tests on PGlite; security tests on the actions and allow-list; and Playwright journeys.
 
 ## Engine unit tests
 
@@ -63,7 +63,7 @@ Run against [PGlite](https://pglite.dev) with the real Drizzle migrations applie
 
 ## End-to-end tests
 
-Playwright against a preview build with a **test-only sign-in**: a Credentials provider enabled only when `E2E=1` and never in production builds (the build fails if both `E2E` and `NODE_ENV=production` are set on Vercel production). Data is seeded from the fictional sample plan.
+Playwright runs `next dev` on a fresh embedded database (`pglite:./.data/e2e`) with the **dev-only sign-in** ([ADR-0011](../04-architecture/decisions/0011-zero-setup-local-dev.md)), which can't run in production builds. `MP_FAKE_NOW` pins the server clock to 15 Oct 2026 so the numbers are stable. It's also ignored in production. Tests load the fictional example plan. Locally they use the installed Chrome; CI installs Playwright's Chromium. Each journey runs at desktop and phone sizes.
 
 Journeys:
 
@@ -79,7 +79,7 @@ Journeys:
 GitHub Actions on every push and PR:
 
 ```
-install → typecheck → lint (incl. import boundaries) → unit + property + db tests → build → e2e (PRs, against the Vercel preview)
+install → typecheck → lint (incl. import boundaries) → unit + property + db + security tests → build → e2e
 ```
 
 `main` is protected: CI must pass before merging.

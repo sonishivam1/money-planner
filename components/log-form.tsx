@@ -21,7 +21,7 @@ export function LogForm({ month, salary, ef, fields, note, isUpdate }: { month: 
       <div className="flex flex-wrap items-center gap-3">
         <button className="btn btn-primary" type="submit" disabled={pending}>{pending ? "Saving…" : isUpdate ? "Save changes" : "Save entry"}</button>
         {state?.ok && <span className="text-sm text-good">Saved. Projections now start from these balances.</span>}
-        {state && !state.ok && <span className="text-sm text-bad">{state.error}</span>}
+        {state && !state.ok && <span className="text-sm text-bad">{state.formError}</span>}
         {!state && <span className="text-sm text-muted">Pre-filled with what the plan expected.</span>}
       </div>
     </form>

@@ -1,7 +1,7 @@
 import { requireUserId } from "@/lib/session";
 import { loadPlan } from "@/lib/load";
 import { listScenarios } from "@/lib/db/queries";
-import { inr, inrShort, monthLabel, pct, summarize, type PlanSummary } from "@/lib/engine";
+import { applyLevers, inr, inrShort, monthLabel, pct, summarize, type PlanSummary } from "@/lib/engine";
 import { Card } from "@/components/ui";
 import { ScenarioForm } from "@/components/scenario-form";
 import { ConfirmButton } from "@/components/confirm-button";
@@ -12,11 +12,12 @@ export default async function ScenariosPage() {
   const userId = await requireUserId();
   const loaded = await loadPlan(userId);
   if (!loaded) return <NoPlan />;
-  const { plan, logs } = loaded;
-  const scenarios = await listScenarios(userId);
+  const { plan, logs, settings } = loaded;
+  const scenarios = await listScenarios(userId, plan);
+  const opts = { timezone: settings.timezone };
   const cols: { id: string | null; name: string; s: PlanSummary }[] = [
-    { id: null, name: "Your plan", s: summarize(plan, logs) },
-    ...scenarios.map((sc) => ({ id: sc.id, name: sc.name, s: summarize(sc.plan, logs) })),
+    { id: null, name: "Your plan", s: summarize(plan, logs, opts) },
+    ...scenarios.map((sc) => ({ id: sc.id, name: sc.name, s: summarize(applyLevers(plan, sc.levers).plan, logs, opts) })),
   ];
   const hasHouse = plan.goals.some((g) => g.kind === "house");
   const rows: [string, (s: PlanSummary) => string][] = [

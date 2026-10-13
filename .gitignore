@@ -6,3 +6,7 @@ out
 *.tsbuildinfo
 next-env.d.ts
 .DS_Store
+.data
+playwright-report
+test-results
+.claude/worktrees

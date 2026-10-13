@@ -1,6 +1,6 @@
-import { integer, jsonb, pgTable, primaryKey, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import { boolean, index, integer, jsonb, pgTable, primaryKey, text, timestamp, unique, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 import type { AdapterAccountType } from "next-auth/adapters";
-import type { MonthlyLog, PlanInput } from "@/lib/engine/schema";
+import type { LeverInput, MonthlyLog, PlanInput } from "@/lib/engine/schema";
 
 // ---- Auth.js tables (shape required by @auth/drizzle-adapter) ----
 
@@ -46,16 +46,35 @@ export const verificationTokens = pgTable(
   (t) => [primaryKey({ columns: [t.identifier, t.token] })],
 );
 
-// ---- App tables ----
+// ---- App tables (docs/04-architecture/data-model.md) ----
 
-/** One plan per user. The plan is edited as a whole, so it lives in one validated JSONB document. */
+/** One plan per user. The plan is edited as a whole, so it lives in one validated JSONB document (ADR-0002). */
 export const plans = pgTable("plan", {
   id: uuid("id").primaryKey().defaultRandom(),
   userId: text("userId").notNull().unique().references(() => users.id, { onDelete: "cascade" }),
   data: jsonb("data").$type<PlanInput>().notNull(),
+  /** Bumped on every save; optimistic concurrency (PLN-10). */
+  version: integer("version").notNull().default(1),
+  /** The revision Track compares against (ADR-0007). */
+  baselineRevisionId: uuid("baselineRevisionId"),
   createdAt: timestamp("createdAt", { mode: "date" }).notNull().defaultNow(),
   updatedAt: timestamp("updatedAt", { mode: "date" }).notNull().defaultNow(),
 });
+
+/** Append-only history of every saved plan (PLN-11). */
+export const planRevisions = pgTable(
+  "plan_revision",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    planId: uuid("planId").notNull().references(() => plans.id, { onDelete: "cascade" }),
+    userId: text("userId").notNull().references(() => users.id, { onDelete: "cascade" }),
+    version: integer("version").notNull(),
+    data: jsonb("data").$type<PlanInput>().notNull(),
+    reason: text("reason").notNull(),
+    createdAt: timestamp("createdAt", { mode: "date" }).notNull().defaultNow(),
+  },
+  (t) => [unique("plan_revision_plan_version").on(t.planId, t.version), index("plan_revision_user_created").on(t.userId, t.createdAt)],
+);
 
 /** Actual balances at the start of a month, before that month's SIPs. */
 export const monthlyLogs = pgTable(
@@ -70,12 +89,24 @@ export const monthlyLogs = pgTable(
   (t) => [uniqueIndex("monthly_log_user_month").on(t.userId, t.month)],
 );
 
-/** A what-if copy of the plan ("switch jobs in June 2027 at ₹1.6L"). */
+/** A what-if: a name and levers applied to the current plan (ADR-0006). */
 export const scenarios = pgTable("scenario", {
   id: uuid("id").primaryKey().defaultRandom(),
   userId: text("userId").notNull().references(() => users.id, { onDelete: "cascade" }),
   name: text("name").notNull(),
-  data: jsonb("data").$type<PlanInput>().notNull(),
+  levers: jsonb("levers").$type<LeverInput[]>().notNull().default([]),
+  /** v1 snapshot; converted to levers on first read, then cleared. */
+  data: jsonb("data").$type<PlanInput>(),
+  createdAt: timestamp("createdAt", { mode: "date" }).notNull().defaultNow(),
+  updatedAt: timestamp("updatedAt", { mode: "date" }).notNull().defaultNow(),
+});
+
+export const userSettings = pgTable("user_settings", {
+  userId: text("userId").primaryKey().references(() => users.id, { onDelete: "cascade" }),
+  timezone: text("timezone").notNull().default("Asia/Kolkata"),
+  theme: text("theme").$type<"system" | "light" | "dark">().notNull().default("system"),
+  salaryDay: integer("salaryDay"),
+  emailReminders: boolean("emailReminders").notNull().default(false),
   createdAt: timestamp("createdAt", { mode: "date" }).notNull().defaultNow(),
   updatedAt: timestamp("updatedAt", { mode: "date" }).notNull().defaultNow(),
 });

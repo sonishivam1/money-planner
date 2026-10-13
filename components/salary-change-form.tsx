@@ -15,7 +15,7 @@ export function SalaryChangeForm({ defaultMonth, defaultAmount }: { defaultMonth
       <div className="flex flex-wrap items-center gap-3">
         <button className="btn btn-primary" type="submit" disabled={pending}>{pending ? "Saving…" : "Record salary change"}</button>
         {state?.ok && <span className="text-sm text-good">Saved. Every goal has been recalculated.</span>}
-        {state && !state.ok && <span className="text-sm text-bad">{state.error}</span>}
+        {state && !state.ok && <span className="text-sm text-bad">{state.formError}</span>}
       </div>
     </form>
   );

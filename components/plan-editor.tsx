@@ -22,7 +22,8 @@ function setIn<T>(obj: T, path: Path, value: unknown): T {
 
 const id = (p: string) => `${p}-${Math.random().toString(36).slice(2, 8)}`;
 
-export function PlanEditor({ initial }: { initial: PlanInput }) {
+export function PlanEditor({ initial, version: initialVersion }: { initial: PlanInput; version: number }) {
+  const [version, setVersion] = useState(initialVersion);
   const [plan, setPlan] = useState<PlanInput>(initial);
   const [saved, setSaved] = useState(JSON.stringify(initial));
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
@@ -67,11 +68,12 @@ export function PlanEditor({ initial }: { initial: PlanInput }) {
 
   const save = () =>
     start(async () => {
-      const res = await savePlanAction(plan);
+      const res = await savePlanAction(plan, version);
       if (res.ok) {
         setSaved(JSON.stringify(plan));
+        if (res.version) setVersion(res.version);
         setMessage({ ok: true, text: "Plan saved. Every page now uses it." });
-      } else setMessage({ ok: false, text: res.error });
+      } else setMessage({ ok: false, text: res.formError ?? "Couldn't save." });
     });
 
   const goals = list<NonNullable<PlanInput["goals"]>[number]>(["goals"]);

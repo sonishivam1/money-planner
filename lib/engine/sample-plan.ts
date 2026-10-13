@@ -2,6 +2,7 @@ import type { PlanInput } from "./schema";
 
 /** A fictional example plan starting October 2026, used by the seed script and the tests. */
 export const samplePlan: PlanInput = {
+  "schemaVersion": 2,
   "baseMonth": "2026-10",
   "horizon": "2036-09",
   "income": {
@@ -100,6 +101,7 @@ export const samplePlan: PlanInput = {
       "cap": 0,
       "rate": 6,
       "goal": "kids",
+      "protected": true,
       "note": "Guaranteed payout at maturity. Keep on autopay."
     },
     {
@@ -111,6 +113,7 @@ export const samplePlan: PlanInput = {
       "cap": 0,
       "rate": 7,
       "goal": "ret",
+      "protected": true,
       "note": "Market-linked. Avoid stopping in the first 5 years."
     },
     {
@@ -126,14 +129,15 @@ export const samplePlan: PlanInput = {
   ],
   "oneTimes": [
     {
-      "id": "loanclose",
-      "name": "Prepay personal loan",
+      "id": "laptop",
+      "name": "New laptop",
       "month": "2027-09",
       "amount": 40000
     }
   ],
   "emergency": {
     "target": 400000,
+    "mode": "amount",
     "funds": "Savings account + one liquid fund"
   },
   "goals": [
@@ -144,6 +148,7 @@ export const samplePlan: PlanInput = {
       "share": 60,
       "targetDate": "2036-09",
       "debtYears": 3,
+      "onTarget": "withdraw",
       "funds": [
         {
           "name": "Nifty 50 index fund",
@@ -164,7 +169,8 @@ export const samplePlan: PlanInput = {
         "downPct": 20,
         "costsPct": 10,
         "loanRate": 8.5,
-        "loanYears": 25
+        "loanYears": 25,
+        "replacesExpenseId": "rent"
       }
     },
     {
@@ -172,6 +178,7 @@ export const samplePlan: PlanInput = {
       "name": "Retirement",
       "kind": "invest",
       "share": 40,
+      "onTarget": "hold",
       "funds": [
         {
           "name": "Nifty 50 index fund (separate \"Retirement\" SIP)",
@@ -182,6 +189,14 @@ export const samplePlan: PlanInput = {
           "pct": 25
         }
       ]
+    },
+    {
+      "id": "kids",
+      "name": "Child's education",
+      "kind": "invest",
+      "share": 0,
+      "onTarget": "hold",
+      "funds": []
     }
   ],
   "assume": {
@@ -195,7 +210,8 @@ export const samplePlan: PlanInput = {
     "ef": 0,
     "goals": {
       "house": 0,
-      "ret": 0
+      "ret": 0,
+      "kids": 0
     },
     "commit": {
       "child": 10000,

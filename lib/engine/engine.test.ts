@@ -73,18 +73,20 @@ describe("projection", () => {
     expect(end.goals.ret / 1e5).toBeLessThan(43);
   });
 
-  it("never invents money: a deficit drains the emergency fund", () => {
+  it("never invents money: a deficit drains the emergency fund and the rest is carried (ENG-2)", () => {
     const p = Plan.parse({ ...samplePlan, income: { ...samplePlan.income, inHand: 70000 } });
-    const r = project(p, toIndex(p.baseMonth), p.start)[0];
-    expect(r.deficit).toBeGreaterThan(0);
-    expect(r.ef).toBe(0);
+    const [oct, nov] = project(p, toIndex(p.baseMonth), p.start);
+    expect(oct.deficit).toBeCloseTo(31700);
+    expect(oct.ef).toBe(0);
+    expect(oct.carried).toBeCloseTo(31700);
+    expect(nov.carried).toBeCloseTo(63400);
   });
 });
 
 describe("forecast from logged balances", () => {
   it("re-runs the plan from the latest log", () => {
-    const log: MonthlyLog = { month: "2027-01", salary: 110000, ef: 200000, goals: {}, commit: {}, note: "" };
-    const f = forecast(plan, [log], new Date(2027, 0, 15));
+    const log: MonthlyLog = { month: "2027-01", salary: 110000, ef: 200000, goals: {}, commit: {}, shortfall: 0, note: "" };
+    const f = forecast(plan, [log], { now: new Date(2027, 0, 15) });
     expect(f.latestLog?.month).toBe("2027-01");
     expect(f.live[0].i).toBe(toIndex("2027-01"));
     expect(f.current.ef).toBeGreaterThan(at("2027-01").ef);

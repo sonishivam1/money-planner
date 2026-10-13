@@ -22,7 +22,7 @@ export function ScenarioForm({ hasHouse }: { hasHouse: boolean }) {
       )}
       <div className="flex flex-wrap items-center gap-3">
         <button className="btn btn-primary" type="submit" disabled={pending}>{pending ? "Working…" : "Create scenario"}</button>
-        {state && !state.ok && <span className="text-sm text-bad">{state.error}</span>}
+        {state && !state.ok && <span className="text-sm text-bad">{state.formError}</span>}
         {state?.ok && <span className="text-sm text-good">Scenario added below.</span>}
         <span className="text-sm text-muted">Leave a field empty to keep your plan's value.</span>
       </div>

@@ -30,6 +30,8 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   typedRoutes: false,
+  // A separate build folder lets end-to-end tests run beside a normal dev server.
+  distDir: process.env.NEXT_DIST_DIR || ".next",
   serverExternalPackages: ["@electric-sql/pglite"],
   turbopack: { root: process.cwd() },
   async headers() {

@@ -10,6 +10,7 @@ import { createDevSession, devLoginEnabled, SESSION_DAYS } from "@/lib/db/dev-au
 import { applyLevers, currentMonth, isTimeZone, Lever, Levers, MAX_MONTHS, Month, toIndex, toMonth, type LeverInput, type PlanInput } from "@/lib/engine";
 import { samplePlan } from "@/lib/engine/sample-plan";
 import { signIn, signOut } from "@/auth";
+import { now } from "@/lib/clock";
 
 export type FieldErrors = Record<string, string>;
 export type ActionResult =
@@ -75,7 +76,7 @@ export async function savePlanAction(input: PlanInput, expectedVersion: number):
 export async function startBlankPlanAction(): Promise<void> {
   const userId = await requireUserId();
   if (await q.getPlanRecord(userId)) redirect("/plan");
-  const m = currentMonth(new Date(), await userTimezone(userId));
+  const m = currentMonth(now(), await userTimezone(userId));
   const plan: PlanInput = {
     baseMonth: toMonth(m),
     horizon: toMonth(m + 119),
@@ -192,7 +193,7 @@ export async function saveLogAction(_: ActionResult | null, form: FormData): Pro
   }
   const month = String(form.get("month") ?? "");
   if (Month.safeParse(month).success) {
-    const cur = currentMonth(new Date(), await userTimezone(userId));
+    const cur = currentMonth(now(), await userTimezone(userId));
     const i = toIndex(month);
     if (i > cur) return { ok: false, fieldErrors: { month: "You can't log a month that hasn't started" }, formError: "Fix the highlighted field." };
     if (i < toIndex(record.plan.baseMonth)) return { ok: false, fieldErrors: { month: "That month is before your plan starts" }, formError: "Fix the highlighted field." };

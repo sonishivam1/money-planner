@@ -20,7 +20,7 @@ const restrict = (layer, rules) => ({
 export default defineConfig([
   ...nextVitals,
   ...nextTs,
-  globalIgnores([".next/**", "node_modules/**", "drizzle/**", ".data/**", "playwright-report/**", "test-results/**", "next-env.d.ts", ".claude/**"]),
+  globalIgnores([".next/**", ".next-e2e/**", "node_modules/**", "drizzle/**", ".data/**", "playwright-report/**", "test-results/**", "next-env.d.ts", ".claude/**"]),
 
   {
     rules: {

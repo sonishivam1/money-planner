@@ -31,6 +31,7 @@ const securityHeaders = [
 const nextConfig: NextConfig = {
   typedRoutes: false,
   serverExternalPackages: ["@electric-sql/pglite"],
+  turbopack: { root: process.cwd() },
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },

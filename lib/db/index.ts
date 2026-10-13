@@ -39,6 +39,7 @@ export async function openPglite(dataDir?: string): Promise<DB> {
   const { drizzle } = await import("drizzle-orm/pglite");
   const { migrate } = await import("drizzle-orm/pglite/migrator");
   const path = await import("node:path");
+  if (dataDir) (await import("node:fs")).mkdirSync(dataDir, { recursive: true });
   const client = new PGlite(dataDir);
   const db = drizzle(client, { schema });
   await migrate(db, { migrationsFolder: path.join(process.cwd(), "drizzle") });
